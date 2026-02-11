@@ -8,6 +8,7 @@ use App\Http\Resources\TodoListResource;
 use App\Models\TodoList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class TodoListController extends Controller
 {
@@ -56,7 +57,7 @@ class TodoListController extends Controller
 
         $query->orderBy($sortBy,$sortDirection);
 
-        $todos = $query->paginate(7);
+        $todos = $query->where('user_id',Auth::id())->paginate(7);
 
         return response()->json([
             'data' => TodoListResource::collection($todos),
@@ -83,6 +84,7 @@ class TodoListController extends Controller
      */
     public function show(TodoList $todo)
     {
+        Gate::authorize('view_todolist',$todo);
         return response()->json([
             'data' => new TodoListResource($todo),
         ]);
@@ -94,11 +96,12 @@ class TodoListController extends Controller
      */
     public function update(UpdateTodoListRequest $request, TodoList $todo)
     {
+        Gate::authorize('update',$todo);
         $todo->update($request->validated());
 
         return response()->json([
             'message' => 'todo updated successfully',
-            'data' => new TodoListResource($todo),
+            'data' => new TodoListResource($todo->fresh()),
         ]);
     }
 
@@ -107,6 +110,7 @@ class TodoListController extends Controller
      */
     public function destroy(TodoList $todo)
     {
+        Gate::authorize('delete',$todo);
         $todo->delete();
 
         return response()->json([
